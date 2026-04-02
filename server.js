@@ -1,5 +1,6 @@
 import express from 'express';
 import sequelize, { Product } from './models/database.js';
+import { defaultProducts } from './defaultData/defaultproducts.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,47 +21,48 @@ app.get('/api', (req, res) => {
 
 // Product CRUD
 app.get('/api/products', async (req, res) => {
-  // Return only an empty array as requested
-  res.json([]);
+  const products = await Product.findAll();
+  res.json(products);
 });
 
 app.get('/api/products/:id', async (req, res) => {
   const product = await Product.findByPk(req.params.id);
   if (!product) return res.status(404).json({ error: 'Product not found' });
-  res.json({
-    success: true,
-    data: product
-  });
+  res.json(product);
 });
 
 app.post('/api/products', async (req, res) => {
-  const { name, price, description } = req.body;
+  const { image, name, priceCents, rating, keywords } = req.body;
   try {
-    const product = await Product.create({ name, price, description });
-    res.status(201).json({
-      success: true,
-      data: product,
-      message: 'Product created successfully'
+    const product = await Product.create({
+      image,
+      name,
+      priceCents: priceCents ?? Math.round((req.body.price ?? 0) * 100),
+      rating: rating ?? { stars: 0, count: 0 },
+      keywords: keywords ?? [],
     });
+    res.status(201).json(product);
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
 app.put('/api/products/:id', async (req, res) => {
   const product = await Product.findByPk(req.params.id);
-  if (!product) return res.status(404).json({ success: false, error: 'Product not found' });
+  if (!product) return res.status(404).json({ error: 'Product not found' });
 
-  const { name, price, description } = req.body;
+  const { image, name, priceCents, rating, keywords } = req.body;
   try {
-    await product.update({ name, price, description });
-    res.json({
-      success: true,
-      data: product,
-      message: 'Product updated successfully'
+    await product.update({
+      image: image ?? product.image,
+      name: name ?? product.name,
+      priceCents: priceCents ?? product.priceCents,
+      rating: rating ?? product.rating,
+      keywords: keywords ?? product.keywords,
     });
+    res.json(product);
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -85,8 +87,15 @@ app.post('/api/data', (req, res) => {
 async function initializeDatabase() {
   try {
     await sequelize.authenticate();
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
     console.log('SQLite/Sequelize connected and synced.');
+
+    // Seed default products if database is empty
+    const productCount = await Product.count();
+    if (productCount === 0) {
+      await Product.bulkCreate(defaultProducts);
+      console.log(`Seeded ${defaultProducts.length} default products successfully.`);
+    }
   } catch (err) {
     console.error('Database connection failed:', err);
     process.exit(1);
