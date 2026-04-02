@@ -1,9 +1,19 @@
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import sequelize, { Product } from './models/database.js';
 import { defaultProducts } from './defaultData/defaultproducts.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const imagesDir = path.join(__dirname, 'images');
+console.log('images directory:', imagesDir);
+app.use('/images', express.static(imagesDir));
 
 // Middleware
 app.use(express.json());
