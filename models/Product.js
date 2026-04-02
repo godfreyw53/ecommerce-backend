@@ -1,0 +1,1 @@
+export { default as sequelize, Product } from './database.js';

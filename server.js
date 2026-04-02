@@ -1,5 +1,5 @@
 import express from 'express';
-import { Sequelize, DataTypes } from 'sequelize';
+import sequelize, { Product } from './models/database.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -72,17 +72,14 @@ app.delete('/api/products/:id', async (req, res) => {
   res.status(204).end();
 });
 
-// Sequelize / SQLite setup
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: 'database.sqlite',
-  logging: false,
-});
+// POST example
+app.post('/api/data', (req, res) => {
+  const data = req.body;
 
-const Product = sequelize.define('Product', {
-  name: { type: DataTypes.STRING, allowNull: false },
-  price: { type: DataTypes.FLOAT, allowNull: false },
-  description: { type: DataTypes.TEXT, allowNull: true },
+  res.json({
+    message: 'Data received successfully',
+    data: data,
+  });
 });
 
 async function initializeDatabase() {
